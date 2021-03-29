@@ -36,7 +36,7 @@ int main (int argc, char *argv[]) {
 	fseek(fptr, read_start_offset, SEEK_SET); //파일포인터를 파일 처음 부분에서 오프셋만큼 이동
 	fread(buf, read_bytes, 1, fptr); //읽기 바이트 수만큼 버퍼에 데이터 읽어옴
 
-	printf("%s", buf); //읽어온 데이터 출력
+	printf("%s\n", buf); //읽어온 데이터 출력
 	fclose(fptr); //파일포인터 Close
 
 	return 0;

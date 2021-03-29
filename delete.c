@@ -27,29 +27,27 @@ int main (int argc, char *argv[]) {
 		fprintf(stderr, "<filename> fopen() error\n");
 		exit(1);
 	}
-	printf("fseek : %ld\n", ftell(fptr));
-	while(feof(fptr) == 0) {
-		front_cnt = fread(front_data, sizeof(char), delete_offset, fptr); //front_data에 오프셋 이전의 데이터들을 저장함
-	}
 
-	printf("fseek : %ld\n", ftell(fptr));
-	fseek(fptr, delete_offset, SEEK_SET); //파일포인터를 데이터를 삭제할 오프셋으로 옮김
-	printf("fseek : %ld\n", ftell(fptr));
+	fseek(fptr, 0, SEEK_SET); //파일포인터의 위치를 파일의 시작에 놓음
+	front_cnt = fread(front_data, delete_offset, 1, fptr); //front_data에 오프셋 이전의 데이터들을 저장함
+
 	fseek(fptr, delete_offset + delete_bytes, SEEK_SET); //파일포인터를 <오프셋 + 삭제할 바이트 수>의 위치로 옮겨 삭제 데이터 이후의 내용을 저장하도록 fseek()
 
 	while(feof(fptr) == 0) {
 		back_cnt = fread(back_data, sizeof(char), MAX_SIZE, fptr); //삭제할 내용 이후의 데이터 저장
 	}
 
-	int res = fflush(fptr); //파일 내용 삭제
-	printf("res : %d\n", res);
-	printf("front data : %s\n", front_data);
-	printf("back data : %s\n", back_data);
+	fclose(fptr); //삭제 전 데이터를 저장해두기위한 작업에서의 파일포인터 닫기
 
-	fwrite(front_data, 1, front_cnt, fptr); //삭제 오프셋 이전의 데이터 fwrite()
+	if ((fptr = fopen(filename, "w")) == NULL) { //파일의 내용을 지우기 위해 존재하는 파일이 초기화되는 쓰기모드 "w"로 재오픈
+		fprintf(stderr, "<filename> fopen() error\n");
+		exit(1); //fopen() 실패 시 예외처리
+	}
+	fwrite(front_data, 1, strlen(front_data), fptr); //삭제 오프셋 이전의 데이터 fwrite()
 	fwrite(back_data, 1, back_cnt, fptr); //삭제 오프셋 이후이 데이터 fwrite()
 
 	fclose(fptr); //파일 닫기
+
 	return 0;
 }
 
