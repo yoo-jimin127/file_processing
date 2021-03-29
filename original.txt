@@ -1,0 +1,3 @@
+hello
+this is original file
+let's copy this file contents and paste
