@@ -59,9 +59,10 @@ int main(int argc, char **argv) {
 
     // 'read_order_list'를 이용하여 random 하게 read 할 때 걸리는 전체 시간을 측정하는 코드 구현
     gettimeofday(&start_time, NULL);
-
+	
+	fseek(fptr, 0, curr_pointer);
     for (int i = 0; i < num_of_records; i++) {
-        fseek(fptr, read_order_list[i] * 250, curr_pointer);
+        fseek(fptr, read_order_list[i] * 250, SEEK_CUR);
         fread(buf, sizeof(char) * 250, 1, fptr); //250바이트씩 버퍼에 읽어옴
         memset(buf, 0, MAX_SIZE);
     }
