@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
     int num_of_records; // 레코드 파일에 저장되어 있는 전체 레코드의 수
     FILE *fptr = NULL;
     char *filename;
-    int filesize = 0;
+    int curr_pointer = 0;
     char buf[MAX_SIZE];
     struct timeval start_time;
     struct timeval end_time;
@@ -38,26 +38,31 @@ int main(int argc, char **argv) {
 
     strcpy(filename, argv[1]);
 
+	if ((fptr = fopen(filename, "rb")) == NULL) {
+		fprintf(stderr, "<filename> fopen() error : read binary mode\n");
+		exit(1);
+	}
+
+	fread(&num_of_records, sizeof(int), 1, fptr);
+	curr_pointer = ftell(fptr);
+	fclose(fptr);
+
     if ((fptr = fopen(filename, "r")) == NULL) {
         fprintf(stderr, "<filename> fopen() error\n");
         exit(1);
     }   
-filesize = fseek(fptr, 0, SEEK_END);
-    fseek(fptr, 0, SEEK_SET);
 
-    num_of_records = filesize / 250; //250바이트씩 저장되는 레코드
     read_order_list = (int *)calloc(num_of_records, sizeof(int)); //배열의 동적할당 calloc() 사용
 
     // 이 함수를 실행하면 'read_order_list' 배열에는 읽어야 할 레코드 번호들이 나열되어 저장됨
     GenRecordSequence(read_order_list, num_of_records);
 
-
     // 'read_order_list'를 이용하여 random 하게 read 할 때 걸리는 전체 시간을 측정하는 코드 구현
     gettimeofday(&start_time, NULL);
 
     for (int i = 0; i < num_of_records; i++) {
-        fseek(fptr, read_order_list[i]*250, SEEK_SET);
-        fread(buf, 1, sizeof(char) * 250, fptr);
+        fseek(fptr, read_order_list[i] * 250, curr_pointer);
+        fread(buf, sizeof(char) * 250, 1, fptr); //250바이트씩 버퍼에 읽어옴
         memset(buf, 0, MAX_SIZE);
     }
 
