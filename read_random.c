@@ -21,33 +21,33 @@ void swap(int *a, int *b);
 int main(int argc, char **argv) {
     int *read_order_list;
     int num_of_records; // 레코드 파일에 저장되어 있는 전체 레코드의 수
-    FILE *fptr = NULL;
-    char *filename;
-    int curr_pointer = 0;
-    char buf[MAX_SIZE];
-    struct timeval start_time;
-    struct timeval end_time;
+    FILE *fptr = NULL; //파일 포인터
+    char *filename; //파일명
+    int curr_pointer = 0; //현재 파일 포인터를 저장할 수 있는 파일 포인터
+    char buf[MAX_SIZE]; //버퍼 생성
+    struct timeval start_time; //timeval start
+    struct timeval end_time; //timeval end
 
-    if (argc < 2) {
+    if (argc < 2) { //프로그램 실행 인자 잘못 전달된 경우
         fprintf(stderr, "Usage : %s <filename>\n", argv[0]);
         exit(1);
     }   
 
-    filename = (char *)malloc(sizeof(char) * FILENAME_SIZE);
-    memset(filename, 0, FILENAME_SIZE);
+    filename = (char *)malloc(sizeof(char) * FILENAME_SIZE); // 파일명 저장 배열 동적 할당
+    memset(filename, 0, FILENAME_SIZE); //메모리 초기화
 
-    strcpy(filename, argv[1]);
+    strcpy(filename, argv[1]); //파일명 저장
 
-	if ((fptr = fopen(filename, "rb")) == NULL) {
+	if ((fptr = fopen(filename, "rb")) == NULL) { //binary read 모드로 파일 오픈
 		fprintf(stderr, "<filename> fopen() error : read binary mode\n");
 		exit(1);
 	}
 
-	fread(&num_of_records, sizeof(int), 1, fptr);
-	curr_pointer = ftell(fptr);
-	fclose(fptr);
+	fread(&num_of_records, sizeof(int), 1, fptr); //레코드 수를 읽어옴
+	curr_pointer = ftell(fptr); //레코드 수 읽고 난 뒤 파일 포인터 읽어옴
+	fclose(fptr); //바이너리 리드 모드로 열린 파일포인터 닫기
 
-    if ((fptr = fopen(filename, "r")) == NULL) {
+    if ((fptr = fopen(filename, "r")) == NULL) { //파일 Read모드로 열기
         fprintf(stderr, "<filename> fopen() error\n");
         exit(1);
     }   
@@ -58,21 +58,21 @@ int main(int argc, char **argv) {
     GenRecordSequence(read_order_list, num_of_records);
 
     // 'read_order_list'를 이용하여 random 하게 read 할 때 걸리는 전체 시간을 측정하는 코드 구현
-    gettimeofday(&start_time, NULL);
+    gettimeofday(&start_time, NULL); //시간 측정 시작
 	
-	fseek(fptr, 0, curr_pointer);
-    for (int i = 0; i < num_of_records; i++) {
-        fseek(fptr, read_order_list[i] * 250, SEEK_CUR);
+	fseek(fptr, 0, curr_pointer); //레코드 수를 읽어 온 이후의 위치로 파일 포인터 위치 옮김
+    for (int i = 0; i < num_of_records; i++) { //레코드 수만큼 반복
+        fseek(fptr, read_order_list[i] * 250, SEEK_CUR); //250바이트씩 읽고 포인터 위치 변경 
         fread(buf, sizeof(char) * 250, 1, fptr); //250바이트씩 버퍼에 읽어옴
         memset(buf, 0, MAX_SIZE);
     }
 
-    gettimeofday(&end_time, NULL);
+    gettimeofday(&end_time, NULL); //시간 측정 종료
 
-    end_time.tv_sec = end_time.tv_sec - start_time.tv_sec;
-    end_time.tv_usec = end_time.tv_usec - start_time.tv_usec;
+    end_time.tv_sec = end_time.tv_sec - start_time.tv_sec; //차이 sec 단위로 계산
+    end_time.tv_usec = end_time.tv_usec - start_time.tv_usec; //차이 usec 단위로 계산
 
-    end_time.tv_usec += (end_time.tv_sec * 1000000);
+    end_time.tv_usec += (end_time.tv_sec * 1000000); //usec에 sec 차이를 추가
 
     printf("#records: %d elapsd_time: %ld us\n", num_of_records, end_time.tv_usec);
 
