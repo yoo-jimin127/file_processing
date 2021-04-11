@@ -49,16 +49,14 @@ int main(int argc, char **argv) {
         exit(1);
     }   
 
-    //filesize = fseek(fptr, 0, SEEK_END); //파일 크기 저장
-    //printf("filesize = %d\n", filesize);
-    fseek(fptr, curr_pointer, SEEK_SET); //파일 포인터 SEEK_SET으로 위치
+    fseek(fptr, curr_pointer, SEEK_SET); //파일 포인터 SEEK_SET부터 헤더 레코드 읽은 뒤로 위치
 
     gettimeofday(&start_time, NULL); //측정 시작
   
 	for (int i = 0; i < record_num; i++) {
 		memset(buf, 0, MAX_SIZE);
 		fread(buf, 1, sizeof(buf), fptr); //레코드 읽어옴
-		//printf("buf : %s\n", buf);
+		printf("record num : %d buf : %s\n", i, buf);
 	}
 
     gettimeofday(&end_time, NULL); //측정 끝

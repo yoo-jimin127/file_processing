@@ -12,7 +12,7 @@
 
 #define SUFFLE_NUM  10000   // 이 값은 마음대로 수정할 수 있음.
 #define FILENAME_SIZE 512
-#define MAX_SIZE 999
+#define MAX_SIZE 250
 
 void GenRecordSequence(int *list, int n);
 void swap(int *a, int *b);
@@ -60,11 +60,12 @@ int main(int argc, char **argv) {
     // 'read_order_list'를 이용하여 random 하게 read 할 때 걸리는 전체 시간을 측정하는 코드 구현
     gettimeofday(&start_time, NULL); //시간 측정 시작
 	
-	fseek(fptr, 0, curr_pointer); //레코드 수를 읽어 온 이후의 위치로 파일 포인터 위치 옮김
+	fseek(fptr, curr_pointer, SEEK_SET); //레코드 수를 읽어 온 이후의 위치로 파일 포인터 위치 옮김
     for (int i = 0; i < num_of_records; i++) { //레코드 수만큼 반복
-        fseek(fptr, read_order_list[i] * 250, SEEK_CUR); //250바이트씩 읽고 포인터 위치 변경 
+        fseek(fptr, read_order_list[i] * 250, SEEK_CUR); //250바이트씩 읽고 포인터 위치 변경
         fread(buf, sizeof(char) * 250, 1, fptr); //250바이트씩 버퍼에 읽어옴
-        memset(buf, 0, MAX_SIZE);
+		printf("num_of_records : %d buf : %s\n", i, buf);
+        //memset(buf, 0, MAX_SIZE);
     }
 
     gettimeofday(&end_time, NULL); //시간 측정 종료
