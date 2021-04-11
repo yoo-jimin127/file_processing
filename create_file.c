@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
-	fwrite(&record_num, sizeof(record_num), 1, fptr); // binary int로 헤더 레코드 작성
+	fwrite(&record_num, sizeof(int), 1, fptr); // binary int로 헤더 레코드 작성
 	//fseek(fptr, 0, SEEK_END);
 	//int header_size = ftell(fptr);
 	//fseek(fptr, 0, SEEK_SET);

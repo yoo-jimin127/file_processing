@@ -24,9 +24,10 @@ int main(int argc, char **argv) {
     FILE *fptr = NULL; //파일 포인터
     char *filename; //파일명
     int curr_pointer = 0; //현재 파일 포인터를 저장할 수 있는 파일 포인터
-    char buf[MAX_SIZE]; //버퍼 생성
+    char buf[MAX_SIZE] = ""; //버퍼 생성
     struct timeval start_time; //timeval start
     struct timeval end_time; //timeval end
+	struct timeval differ_time;
 
     if (argc < 2) { //프로그램 실행 인자 잘못 전달된 경우
         fprintf(stderr, "Usage : %s <filename>\n", argv[0]);
@@ -64,8 +65,7 @@ int main(int argc, char **argv) {
     for (int i = 0; i < num_of_records; i++) { //레코드 수만큼 반복
         fseek(fptr, read_order_list[i] * 250, SEEK_CUR); //250바이트씩 읽고 포인터 위치 변경
         fread(buf, sizeof(char) * 250, 1, fptr); //250바이트씩 버퍼에 읽어옴
-		printf("num_of_records : %d buf : %s\n", i, buf);
-        //memset(buf, 0, MAX_SIZE);
+		//printf("num_of_records : %d buf : %s\n", i, buf);
     }
 
     gettimeofday(&end_time, NULL); //시간 측정 종료

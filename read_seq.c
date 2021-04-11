@@ -23,7 +23,8 @@ int main(int argc, char **argv) {
 	int curr_pointer = 0; //파일의 현재 포인터 저장 변수
     struct timeval start_time; //timeval start
     struct timeval end_time; //timeval end
-    char buf[MAX_SIZE];
+	struct timeval differ_time;
+    char buf[MAX_SIZE] ="";
 
     if (argc < 2) {
         fprintf(stderr, "Usage : %s <filename>\n", argv[0]);
@@ -44,19 +45,18 @@ int main(int argc, char **argv) {
 	curr_pointer = ftell(fptr);
 	fclose(fptr);
 
-    if ((fptr = fopen(filename, "r+")) == NULL) { //읽기 모드로 파일 오픈
+    if ((fptr = fopen(filename, "r")) == NULL) { //읽기 모드로 파일 오픈
         fprintf(stderr, "<filename> fopen() error\n");
         exit(1);
     }   
 
-    fseek(fptr, curr_pointer, SEEK_SET); //파일 포인터 SEEK_SET부터 헤더 레코드 읽은 뒤로 위치
-
     gettimeofday(&start_time, NULL); //측정 시작
+    
+	fseek(fptr, curr_pointer, SEEK_SET); //파일 포인터 SEEK_SET부터 헤더 레코드 읽은 뒤로 위치
   
 	for (int i = 0; i < record_num; i++) {
-		memset(buf, 0, MAX_SIZE);
-		fread(buf, 1, sizeof(buf), fptr); //레코드 읽어옴
-		printf("record num : %d buf : %s\n", i, buf);
+		fread(buf, sizeof(char) * 250, 1, fptr); //레코드 읽어옴
+		//printf("record num : %d buf : %s\n", i, buf);
 	}
 
     gettimeofday(&end_time, NULL); //측정 끝
