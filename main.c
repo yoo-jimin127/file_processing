@@ -14,6 +14,7 @@ FILE *flashfp;
 void ftl_open();
 void ftl_write(int lsn, char *sectorbuf);
 void ftl_read(int lsn, char *sectorbuf);
+void ftl_print();
 
 //
 // 이 함수는 file system의 역할을 수행한다고 생각하면 되고,
@@ -26,7 +27,7 @@ int main(int argc, char *argv[])
     char sectorbuf[SECTOR_SIZE];
 	int lsn, i;
 
-    devicefp = fopen("flashmemory", "w+b");
+    flashfp = fopen("flashmemory", "w+b");
 	if(flashfp == NULL)
 	{
 		printf("file open error\n");
@@ -50,6 +51,8 @@ int main(int argc, char *argv[])
 
 	//
 	// ftl_write() 및 ftl_read() 테스트 코드 작성
+
+	ftl_print();
 
 	//
 
