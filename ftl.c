@@ -26,7 +26,7 @@ typedef struct {
 }SpareData;
 
 typedef struct {
-	MappingTableEntry entry[DATAPAGES_PER_DEVICE];
+	MappingTableEntry entry[BLOCKS_PER_DEVICE];
 }AddrMappingTable;
 
 AddrMappingTable addrMappingTable; //address mapping table 구조체 변수
@@ -82,7 +82,8 @@ void ftl_read(int lsn, char *sectorbuf) {
 	lbn = lsn / PAGES_PER_BLOCK; //데이터를 읽을 블록의 번호를 얻기 위해 lsn/블럭 개수
 	offset = lsn % PAGES_PER_BLOCK; //lbn번째 블록의 몇번째 페이지에 데이터를 읽을 것인지에 대한 offset
 	
-	pbn = addrMappingTable.entry[lbn].pbn; //인자로 주어진 lsn으로부터 대응되는 ppn을 구함
+	pbn = addrMappingTable.entry[lbn].pbn; //인자로 주어진 lsn으로부터 대응되는 pbn을 구함
+	ppn = offset + (pbn * PAGES_PER_BLOCK);
 
 	if (pbn == -1) { //pbn이 -1인 경우(free page인 경우)
 		printf("---There is No Data---\n");
@@ -148,7 +149,7 @@ void ftl_write(int lsn, char *sectorbuf) {
 
 		if (PAGES_PER_BLOCK + (pbn * PAGES_PER_BLOCK) == i) { //i의 ppn이 입력받은 ppn과 같은 경우
 			for (j = PAGES_PER_BLOCK * pbn, check = 0; j < PAGES_PER_BLOCK + (PAGES_PER_BLOCK * pbn); j++, check++) {
-				if (ppn = j) {
+				if (ppn = j) { //입력받은 ppn이 j와 같은 값을 가지는 경우
 					continue;
 				}
 
@@ -157,15 +158,34 @@ void ftl_write(int lsn, char *sectorbuf) {
 					dd_read(k, tmpbuf); //dd_read로 k번째 ppn의 값을 읽어옴
 
 					if (strcmp(tmpbuf + SECTOR_SIZE, cmp_spare_data) != 0) {
-						dd_write();
+						dd_write(check + ((addrMappingTable.entry[DATABLKS_PER_DEVICE].pbn) * PAGES_PER_BLOCK), tmpbuf);
 						break;
 					}
 				}
 
-				if ()
+				if (PAGES_PER_BLOCK + (PAGES_PER_BLOCK * pbn) == k) {
+					dd_read(j, tmpbuf);
+
+					if (offset == check) {
+						check++;
+					}
+
+					dd_write(check + ((addrMappingTable.entry[DATABLKS_PER_DEVICE].pbn) * PAGES_PER_BLOCK), tmpbuf); 
+					dd_read(check + ((addrMappingTable.entry[DATABLKS_PER_DEVICE].pbn) * PAGES_PER_BLOCK), tmpbuf); 
+				}
 			}
 
+			dd_write(offset + ((addrMappingTable.entry[DATABLKS_PER_DEVICE].pbn) * PAGES_PER_BLOCK), pagebuf);
+			dd_erase(pbn);
+			addrMappingTable.entry[lbn].pbn = freeBlockIdx;
+			addrMappingTable.entry[DATABLKS_PER_DEVICE].pbn = pbn;
+			freeBlockIdx = pbn;
+
 		}
+	}
+
+	else {
+		dd_write(ppn, pagebuf);
 	}
 
 	/*if (pbn == -1) { //lsn에 최초로 데이터를 쓰는 경우
