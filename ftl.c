@@ -30,10 +30,7 @@ typedef struct {
 }AddrMappingTable;
 
 AddrMappingTable addrMappingTable; //address mapping table 구조체 변수
-
 int freeBlockIdx; //free block의 pbn 값의 초기화를 위해 필요한 인덱스 변수
-int free_block_page[DATAPAGES_PER_DEVICE]; //free block의 페이지 배열(스택)
-int free_block_top = -1; //스택이 비어있음을 의미하는 -1로 초기화
 
 //
 // flash memory를 처음 사용할 때 필요한 초기화 작업, 예를 들면 address mapping table에 대한
@@ -46,24 +43,29 @@ void ftl_open() {
 	// free block's pbn 초기화
     	// address mapping table에서 lbn 수는 DATABLKS_PER_DEVICE 동일
 	char * checkbuf = (char *)malloc(sizeof(char) * PAGE_SIZE); //flash memory 파일의 존재여부 판단을 위해 dd_read()에 pagebuf 인자를 넘길 메모리 동적 할당
+	char *cmpbuf = (char *)malloc(sizeof(char) * PAGE_SIZE);
 	int empty_check = 0;
 
 	memset(checkbuf, 0, PAGE_SIZE); //메모리 초기화
+	memset(cmpbuf, 0xff, PAGE_SIZE);
 	empty_check = dd_read(0, checkbuf); //checkbuf에 ppn 0번째 값을 읽어옴
 
-	if (empty_check == 1) { //기존 파일이 존재하는 경우
+	//if (strcmp(checkbuf,cmpbuf) != 0) { 
+	//	printf("다름\n");
+	//}
+	//printf("%s\n", checkbuf);
+	//printf("%s\n", cmpbuf);
+
+//	if (checkbuf) { //기존 파일이 존재하는 경우
 	//각 블록의 첫번째 페이지를 읽어서 address mapping table 복구 과정
+//	}
+
+	for (int i = 0; i < DATABLKS_PER_DEVICE; i++) {
+		addrMappingTable.entry[i].lbn = i; //address mapping table의 lbn값을 초기화
+		addrMappingTable.entry[i].pbn = -1; //address mapping table의 entry의 pbn을 초기화
 	}
 
-	if (empty_check == -1) {
-		for (int i = 0; i < DATABLKS_PER_DEVICE; i++) {
-			addrMappingTable.entry[i].lbn = i; //address mapping table의 lbn값을 초기화
-			addrMappingTable.entry[i].pbn = -1; //address mapping table의 entry의 pbn을 초기화
-			//free_block_page[++free_block_top] = addrMappingTable.entry[i].lbn;
-		}
-
-		freeBlockIdx = BLOCKS_PER_DEVICE -1; // free block의 pbn 값을 맨 마지막 블록의 인덱스로 초기화
-	}
+	freeBlockIdx = BLOCKS_PER_DEVICE -1; // free block의 pbn 값을 맨 마지막 블록의 인덱스로 초기화
 	return;
 }
 
@@ -73,17 +75,22 @@ void ftl_open() {
 //
 void ftl_read(int lsn, char *sectorbuf) {
 	char pagebuf[PAGE_SIZE]; //페이지 버퍼(페이지 단위로 데이터를 읽어오기 위해 PAGE_SIZE만큼)
+	int lbn, offset; //데이터를 읽을 lbn과 offset
+	int pbn; //physical block number
 	int ppn; //physical page number(인자로 주어진 lsn에 대응되는 ppn)
 
-	ppn = addrMappingTable.entry[lsn].pbn; //인자로 주어진 lsn으로부터 대응되는 ppn을 구함
+	lbn = lsn / PAGES_PER_BLOCK; //데이터를 읽을 블록의 번호를 얻기 위해 lsn/블럭 개수
+	offset = lsn % PAGES_PER_BLOCK; //lbn번째 블록의 몇번째 페이지에 데이터를 읽을 것인지에 대한 offset
+	
+	pbn = addrMappingTable.entry[lbn].pbn; //인자로 주어진 lsn으로부터 대응되는 ppn을 구함
 
-	if (ppn == -1) { //ppn이 -1인 경우(free page인 경우)
+	if (pbn == -1) { //pbn이 -1인 경우(free page인 경우)
 		printf("---There is No Data---\n");
 		return;
 	}
 
-	else { //ppn이 -1이 아닌 경우(해당 영역에 데이터가 존재하는 경우)
-		dd_read(ppn, pagebuf); //페이지 단위로 데이터를 읽어옴
+	else { //pbn이 -1이 아닌 경우(해당 영역에 데이터가 존재하는 경우)
+		dd_read(pbn, pagebuf); //페이지 단위로 데이터를 읽어옴
 		memcpy(sectorbuf, pagebuf, SECTOR_SIZE); //flash memory에서 페이지를 읽어와 sectorbuf에 데이터를 복사함
 		printf("%s\n", sectorbuf); //복사된 데이터(sectorbuf) 출력
 	}
@@ -96,9 +103,17 @@ void ftl_read(int lsn, char *sectorbuf) {
 // (즉, 이 함수에서 메모리를 할당 받으면 안됨)
 //
 void ftl_write(int lsn, char *sectorbuf) {
-	SpareData spareData;
+	char spare_data[SPARE_SIZE]; //spare영역의 메타데이터 작성을 위한 배열
+	char pagebuf[PAGE_SIZE]; //페이지 버퍼
+	int lbn, offset; //데이터를 쓸 lbn과 offset
+	int pbn;
 	int ppn;
+	
+	memset(spare_data, 0, SPARE_SIZE);
+	memset(pagebuf, 0, PAGE_SIZE);
 
+	lbn = lsn / PAGES_PER_BLOCK; //데이터를 쓸 블록의 번호를 얻기 위해 lsn/블럭 개수
+	offset = lsn % PAGES_PER_BLOCK; //lbn번째 블록의 몇번째 페이지에 데이터를 쓸 것인지에 대한 offset
 	ppn = addrMappingTable.entry[lsn].pbn;
 
 	if (ppn == -1) { //lsn에 최초로 데이터를 쓰는 경우
