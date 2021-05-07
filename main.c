@@ -47,10 +47,21 @@ int main(int argc, char *argv[])
 
 	free(blockbuf);
 
+	//char *tmp1 = (char *)malloc(sizeof(char) * BLOCK_SIZE);
+	//fread(tmp1, BLOCK_SIZE, 1, flashfp);
+
+	//printf("before : %s\n", tmp1);
+
 	ftl_open();    // ftl_read(), ftl_write() 호출하기 전에 이 함수를 반드시 호출해야 함
+
+	//char *tmp2 = (char*)malloc(sizeof(char) * BLOCK_SIZE);
+	//fread(tmp2, BLOCK_SIZE, 1, flashfp);
+
+	//printf("after : %s\n", tmp2);
 
 	//
 	// ftl_write() 및 ftl_read() 테스트 코드 작성
+	//ftl_read(15, flashfp);
 
 	ftl_print();
 
