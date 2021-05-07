@@ -9,7 +9,7 @@
 #include "blockmap.h"
 
 FILE *flashfp;
-
+FILE *testfp;
 /****************  prototypes ****************/
 void ftl_open();
 void ftl_write(int lsn, char *sectorbuf);
@@ -24,6 +24,7 @@ void ftl_print();
 int main(int argc, char *argv[])
 {
 	char *blockbuf;
+	char *testbuf;
     char sectorbuf[SECTOR_SIZE];
 	int lsn, i;
 
@@ -47,21 +48,54 @@ int main(int argc, char *argv[])
 
 	free(blockbuf);
 
-	//char *tmp1 = (char *)malloc(sizeof(char) * BLOCK_SIZE);
-	//fread(tmp1, BLOCK_SIZE, 1, flashfp);
-
-	//printf("before : %s\n", tmp1);
-
 	ftl_open();    // ftl_read(), ftl_write() 호출하기 전에 이 함수를 반드시 호출해야 함
-
-	//char *tmp2 = (char*)malloc(sizeof(char) * BLOCK_SIZE);
-	//fread(tmp2, BLOCK_SIZE, 1, flashfp);
-
-	//printf("after : %s\n", tmp2);
 
 	//
 	// ftl_write() 및 ftl_read() 테스트 코드 작성
-	//ftl_read(15, flashfp);
+	ftl_write(0, "aaaaa");
+	ftl_write(1, "bbbbb");
+	ftl_write(2, "ccccc");
+	ftl_write(3, "ddddd");
+	ftl_write(4, "eeeee");
+	ftl_write(5, "fffff");
+	ftl_write(6, "ggggg");
+	ftl_write(7, "hhhhh");
+	ftl_write(8, "iiiii");
+	ftl_write(9, "jjjjj");
+	ftl_write(10, "kkkkk");
+	ftl_write(11, "lllll");
+	ftl_write(12, "mmmmm");
+	ftl_write(13, "nnnnn");
+	ftl_write(14, "ooooo");
+	ftl_write(3, "d1d1d1d1d1");
+	ftl_write(9, "j1j1j1j1j1");
+	ftl_write(13, "n1n1n1n1n1");
+
+	ftl_read(0, sectorbuf);
+	ftl_read(1, sectorbuf);
+	ftl_read(2, sectorbuf);
+	ftl_read(3, sectorbuf);
+	ftl_read(4, sectorbuf);
+	ftl_read(5, sectorbuf);
+	ftl_read(6, sectorbuf);
+	ftl_read(7, sectorbuf);
+	ftl_read(8, sectorbuf);
+	ftl_read(9, sectorbuf);
+	ftl_read(10, sectorbuf);
+	ftl_read(11, sectorbuf);
+	ftl_read(12, sectorbuf);
+	ftl_read(13, sectorbuf);
+	ftl_read(14, sectorbuf);
+
+	/*
+	testfp = fopen("flashmemory", "rb");
+	testbuf = (char *)malloc(BLOCK_SIZE);
+	memset(testbuf, 0, BLOCK_SIZE);
+
+	for (int j = 0; j < BLOCKS_PER_DEVICE; j++) {
+		fread(testbuf, BLOCK_SIZE, 1, testfp);
+		printf("%s\n", testbuf);
+	}*/
 
 	ftl_print();
 

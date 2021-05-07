@@ -20,18 +20,13 @@ typedef struct {
 }MappingTableEntry;
 
 typedef struct {
-	int lbn; //logical block number
-	char dummyData[SPARE_SIZE - 8];
-	int check_block; //유효한 block인지 확인하기 위한 변수
-}SpareData;
-
-typedef struct {
 	MappingTableEntry entry[BLOCKS_PER_DEVICE];
 }AddrMappingTable;
 
 AddrMappingTable addrMappingTable; //address mapping table 구조체 변수
 int freeBlockIdx = 0; //free block의 pbn 값의 초기화를 위해 필요한 인덱스 변수
 int pbnIdx = 0; //ftl_write()에서 pbn 값을 임의로 지정하여줄 때 필요한 변수
+
 //
 // flash memory를 처음 사용할 때 필요한 초기화 작업, 예를 들면 address mapping table에 대한
 // 초기화 등의 작업을 수행한다. 따라서, 첫 번째 ftl_write() 또는 ftl_read()가 호출되기 전에
@@ -41,7 +36,7 @@ void ftl_open() {
 	//
 	// address mapping table 초기화 또는 복구
 	// free block's pbn 초기화
-    	// address mapping table에서 lbn 수는 DATABLKS_PER_DEVICE 동일
+	// address mapping table에서 lbn 수는 DATABLKS_PER_DEVICE 동일
 	char * checkbuf = (char *)malloc(sizeof(char) * PAGE_SIZE); //flash memory 파일의 존재여부 판단을 위해 dd_read()에 pagebuf 인자를 넘길 메모리 동적 할당
 	char *cmpbuf = (char *)malloc(sizeof(char) * PAGE_SIZE);
 	int empty_check = 0;
@@ -56,9 +51,9 @@ void ftl_open() {
 	//printf("%s\n", checkbuf);
 	//printf("%s\n", cmpbuf);
 
-//	if (checkbuf) { //기존 파일이 존재하는 경우
+	//	if (checkbuf) { //기존 파일이 존재하는 경우
 	//각 블록의 첫번째 페이지를 읽어서 address mapping table 복구 과정
-//	}
+	//	}
 
 	for (int i = 0; i < DATABLKS_PER_DEVICE; i++) {
 		addrMappingTable.entry[i].lbn = i; //address mapping table의 lbn값을 초기화
@@ -66,6 +61,7 @@ void ftl_open() {
 	}
 
 	freeBlockIdx = BLOCKS_PER_DEVICE -1; // free block의 pbn 값을 맨 마지막 블록의 인덱스로 초기화
+	addrMappingTable.entry[DATABLKS_PER_DEVICE].pbn = freeBlockIdx;
 	return;
 }
 
@@ -75,27 +71,37 @@ void ftl_open() {
 //
 void ftl_read(int lsn, char *sectorbuf) {
 	char pagebuf[PAGE_SIZE]; //페이지 버퍼(페이지 단위로 데이터를 읽어오기 위해 PAGE_SIZE만큼)
+	char sparebuf[SPARE_SIZE];
 	int lbn, offset; //데이터를 읽을 lbn과 offset
 	int pbn; //physical block number
 	int ppn; //physical page number(인자로 주어진 lsn에 대응되는 ppn)
 
+	memset(pagebuf, 0, PAGE_SIZE);
+	memset(sparebuf, 0, SPARE_SIZE);
+	
+	sprintf(sparebuf, "%d", lsn);
+
 	lbn = lsn / PAGES_PER_BLOCK; //데이터를 읽을 블록의 번호를 얻기 위해 lsn/블럭 개수
 	offset = lsn % PAGES_PER_BLOCK; //lbn번째 블록의 몇번째 페이지에 데이터를 읽을 것인지에 대한 offset
-	
+
 	pbn = addrMappingTable.entry[lbn].pbn; //인자로 주어진 lsn으로부터 대응되는 pbn을 구함
 	ppn = offset + (pbn * PAGES_PER_BLOCK);
 
-	if (pbn == -1) { //pbn이 -1인 경우(free page인 경우)
+	if (pbn < 0) { //pbn이 -1인 경우(free page인 경우)
 		printf("---There is No Data---\n");
 		return;
 	}
 
-	else { //pbn이 -1이 아닌 경우(해당 영역에 데이터가 존재하는 경우)
-		dd_read(pbn, pagebuf); //페이지 단위로 데이터를 읽어옴
-		memcpy(sectorbuf, pagebuf, SECTOR_SIZE); //flash memory에서 페이지를 읽어와 sectorbuf에 데이터를 복사함
-		printf("%s\n", sectorbuf); //복사된 데이터(sectorbuf) 출력
-	}
+	dd_read(ppn, pagebuf); //해당 ppn에서 페이지버퍼 읽어오고
+	strncpy(sectorbuf, pagebuf, SECTOR_SIZE); //섹터 사이즈만큼 섹터버퍼에 페이지버퍼 내용 복사
 
+	for (int i = PAGES_PER_BLOCK + (PAGES_PER_BLOCK * pbn); i < PAGES_PER_BLOCK + (PAGES_PER_BLOCK * pbn); i++) {
+		dd_read(i, pagebuf);
+
+		if (strncmp(pagebuf + SECTOR_SIZE, sparebuf, SPARE_SIZE) != 0) {
+			strncpy(sectorbuf, pagebuf, SECTOR_SIZE);
+		}
+	}
 	return;
 }
 
@@ -112,32 +118,32 @@ void ftl_write(int lsn, char *sectorbuf) {
 	int pbn;//physical block number
 	int ppn; //physical page number
 	int i = 0, j = 0, k = 0, check = 0; 
-	
+
 	memset(spare_data, 0, SPARE_SIZE); //스페어버퍼 초기화
 	memset(cmp_spare_data, 0, SPARE_SIZE); //임시 스페어버퍼 초기화
 	memset(tmpbuf, 0, PAGE_SIZE); //임시버퍼 초기화
 	memset(pagebuf, 0, PAGE_SIZE); //페이지버퍼 초기화
-	
+
 	memcpy(pagebuf, sectorbuf, SECTOR_SIZE); //임시버퍼에 섹터버퍼 내용 옮김
 
 	lbn = lsn / PAGES_PER_BLOCK; //데이터를 쓸 블록의 번호를 얻기 위해 lsn/블럭 개수
 	offset = lsn % PAGES_PER_BLOCK; //lbn번째 블록의 몇번째 페이지에 데이터를 쓸 것인지에 대한 offset
-	
+
 	if (addrMappingTable.entry[lbn].pbn == -1) {
 		addrMappingTable.entry[lbn].pbn = pbnIdx++;
-
+	}
 	pbn = addrMappingTable.entry[lbn].pbn; //pbn에 값 저장
 	ppn = (pbn * PAGES_PER_BLOCK) + offset; //페이지 넘버 : pbn * 블록별 페이지 개수 + offset
 
 	sprintf(spare_data, "%d%d", lbn, lsn); //스페어 버퍼에 lbn, lsn 씀
 	memcpy(pagebuf + SECTOR_SIZE, spare_data, SPARE_SIZE);
-	
+
 	dd_read(ppn, tmpbuf); //tmpbuf에 해당 ppn의 데이터 읽어오기
 
 	if (strncmp(tmpbuf + SECTOR_SIZE, spare_data, strlen(spare_data)) != 0) { //스페어데이터와 tmpbuf의 데이터 다른 경우
 		for (i = PAGES_PER_BLOCK + (PAGES_PER_BLOCK * pbn); i < PAGES_PER_BLOCK + (PAGES_PER_BLOCK * pbn); i++) {
 			dd_read(i, tmpbuf); //해당 ppn의 내용을 tmpbuf에 읽어옴
-			
+
 			if (isdigit(*(tmpbuf + SECTOR_SIZE))) { //숫자 판단 함수를 사용해 spare area에 숫자가 존재하면
 				continue;
 
@@ -187,14 +193,6 @@ void ftl_write(int lsn, char *sectorbuf) {
 	else {
 		dd_write(ppn, pagebuf);
 	}
-
-	/*if (pbn == -1) { //lsn에 최초로 데이터를 쓰는 경우
-		
-	}
-
-	else { //lsn에 데이터를 갱신(update)하는 경우
-
-	} */
 
 	return;
 }
