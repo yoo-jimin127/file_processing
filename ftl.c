@@ -45,15 +45,25 @@ void ftl_open() {
 	// address mapping table 초기화 또는 복구
 	// free block's pbn 초기화
     	// address mapping table에서 lbn 수는 DATABLKS_PER_DEVICE 동일
+	char * checkbuf = (char *)malloc(sizeof(char) * PAGE_SIZE); //flash memory 파일의 존재여부 판단을 위해 dd_read()에 pagebuf 인자를 넘길 메모리 동적 할당
+	int empty_check = 0;
 
-	for (int i = 0; i < DATAPAGES_PER_DEVICE; i++) {
-		addrMappingTable.entry[i].lbn = i; //address mapping table의 lbn값을 초기화
-		addrMappingTable.entry[i].pbn = -1; //address mapping table의 entry의 pbn을 초기화
-		//free_block_page[++free_block_top] = addrMappingTable.entry[i].lbn;
+	memset(checkbuf, 0, PAGE_SIZE); //메모리 초기화
+	empty_check = dd_read(0, checkbuf); //checkbuf에 ppn 0번째 값을 읽어옴
+
+	if (empty_check == 1) { //기존 파일이 존재하는 경우
+	//각 블록의 첫번째 페이지를 읽어서 address mapping table 복구 과정
 	}
 
-	freeBlockIdx = BLOCKS_PER_DEVICE -1; // free block의 pbn 값을 맨 마지막 블록의 인덱스로 초기화
-	
+	if (empty_check == -1) {
+		for (int i = 0; i < DATABLKS_PER_DEVICE; i++) {
+			addrMappingTable.entry[i].lbn = i; //address mapping table의 lbn값을 초기화
+			addrMappingTable.entry[i].pbn = -1; //address mapping table의 entry의 pbn을 초기화
+			//free_block_page[++free_block_top] = addrMappingTable.entry[i].lbn;
+		}
+
+		freeBlockIdx = BLOCKS_PER_DEVICE -1; // free block의 pbn 값을 맨 마지막 블록의 인덱스로 초기화
+	}
 	return;
 }
 
@@ -78,7 +88,6 @@ void ftl_read(int lsn, char *sectorbuf) {
 		printf("%s\n", sectorbuf); //복사된 데이터(sectorbuf) 출력
 	}
 
-
 	return;
 }
 
@@ -94,18 +103,18 @@ void ftl_write(int lsn, char *sectorbuf) {
 
 	if (ppn == -1) { //lsn에 최초로 데이터를 쓰는 경우
 		
-
 	}
 
 	else { //lsn에 데이터를 갱신(update)하는 경우
 
 	}
+
 	return;
 }
 
 void ftl_print() {
 	printf("lbn pbn\n");
-	for (int i = 0; i < DATAPAGES_PER_DEVICE; i++) {
+	for (int i = 0; i < DATABLKS_PER_DEVICE; i++) {
 		printf("%d %d\n", addrMappingTable.entry[i].lbn, addrMappingTable.entry[i].pbn);
 	}
 
