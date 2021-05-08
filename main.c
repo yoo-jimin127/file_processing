@@ -67,10 +67,11 @@ int main(int argc, char *argv[])
 	ftl_write(12, "mmmmm");
 	ftl_write(13, "nnnnn");
 	ftl_write(14, "ooooo");
-	ftl_write(3, "d1d1d1d1d1");
-	ftl_write(9, "j1j1j1j1j1");
-	ftl_write(13, "n1n1n1n1n1");
+	//ftl_write(3, "d1d1d1d1d1");
+	//ftl_write(9, "j1j1j1j1j1");
+	//ftl_write(13, "n1n1n1n1n1");
 
+	
 	ftl_read(0, sectorbuf);
 	ftl_read(1, sectorbuf);
 	ftl_read(2, sectorbuf);
@@ -86,7 +87,7 @@ int main(int argc, char *argv[])
 	ftl_read(12, sectorbuf);
 	ftl_read(13, sectorbuf);
 	ftl_read(14, sectorbuf);
-
+	
 	/*
 	testfp = fopen("flashmemory", "rb");
 	testbuf = (char *)malloc(BLOCK_SIZE);

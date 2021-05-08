@@ -88,7 +88,7 @@ void ftl_read(int lsn, char *sectorbuf) {
 	ppn = offset + (pbn * PAGES_PER_BLOCK);
 
 	if (pbn < 0) { //pbn이 -1인 경우(free page인 경우)
-		printf("---There is No Data---\n");
+		//printf("---There is No Data---\n");
 		return;
 	}
 
@@ -137,7 +137,6 @@ void ftl_write(int lsn, char *sectorbuf) {
 
 	sprintf(spare_data, "%d%d", lbn, lsn); //스페어 버퍼에 lbn, lsn 씀
 	memcpy(pagebuf + SECTOR_SIZE, spare_data, SPARE_SIZE);
-
 	dd_read(ppn, tmpbuf); //tmpbuf에 해당 ppn의 데이터 읽어오기
 
 	if (strncmp(tmpbuf + SECTOR_SIZE, spare_data, strlen(spare_data)) != 0) { //스페어데이터와 tmpbuf의 데이터 다른 경우
