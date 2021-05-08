@@ -76,10 +76,10 @@ void ftl_read(int lsn, char *sectorbuf) {
 	int pbn; //physical block number
 	int ppn; //physical page number(인자로 주어진 lsn에 대응되는 ppn)
 
-	memset(pagebuf, 0, PAGE_SIZE);
-	memset(sparebuf, 0, SPARE_SIZE);
+	memset(pagebuf, 0, PAGE_SIZE); //페이지버퍼 메모리 초기화
+	memset(sparebuf, 0, SPARE_SIZE); //스페어 버퍼 메모리 초기화
 	
-	sprintf(sparebuf, "%d", lsn);
+	sprintf(sparebuf, "%d", lsn); //스페어버퍼에 lsn의 값을 문자열로 저장
 
 	lbn = lsn / PAGES_PER_BLOCK; //데이터를 읽을 블록의 번호를 얻기 위해 lsn/블럭 개수
 	offset = lsn % PAGES_PER_BLOCK; //lbn번째 블록의 몇번째 페이지에 데이터를 읽을 것인지에 대한 offset
@@ -96,10 +96,10 @@ void ftl_read(int lsn, char *sectorbuf) {
 	strncpy(sectorbuf, pagebuf, SECTOR_SIZE); //섹터 사이즈만큼 섹터버퍼에 페이지버퍼 내용 복사
 
 	for (int i = PAGES_PER_BLOCK + (PAGES_PER_BLOCK * pbn); i < PAGES_PER_BLOCK + (PAGES_PER_BLOCK * pbn); i++) {
-		dd_read(i, pagebuf);
+		dd_read(i, pagebuf); //i번째 인덱스의 값을 pagebuf에 읽어옴
 
-		if (strncmp(pagebuf + SECTOR_SIZE, sparebuf, SPARE_SIZE) != 0) {
-			strncpy(sectorbuf, pagebuf, SECTOR_SIZE);
+		if (strncmp(pagebuf + SECTOR_SIZE, sparebuf, SPARE_SIZE) != 0) { // 스페어버퍼의 값과 lsn이 같을 경우 0을 리턴, 다를 경우 0이 아닌 다른 값 리턴
+			strncpy(sectorbuf, pagebuf, SECTOR_SIZE); //업데이트된 내용을 SECTOR_SIZE만큼 다시 복사
 		}
 	}
 	return;
@@ -129,8 +129,8 @@ void ftl_write(int lsn, char *sectorbuf) {
 	lbn = lsn / PAGES_PER_BLOCK; //데이터를 쓸 블록의 번호를 얻기 위해 lsn/블럭 개수
 	offset = lsn % PAGES_PER_BLOCK; //lbn번째 블록의 몇번째 페이지에 데이터를 쓸 것인지에 대한 offset
 
-	if (addrMappingTable.entry[lbn].pbn == -1) {
-		addrMappingTable.entry[lbn].pbn = pbnIdx++;
+	if (addrMappingTable.entry[lbn].pbn == -1) { //위에서 구한 lbn의 pbn의 값이 -1인 경우 (freeblock)
+		addrMappingTable.entry[lbn].pbn = pbnIdx++; //pbnIdx의 개수를 하나 늘려 해당 lbn의 pbn값에 저장
 	}
 	pbn = addrMappingTable.entry[lbn].pbn; //pbn에 값 저장
 	ppn = (pbn * PAGES_PER_BLOCK) + offset; //페이지 넘버 : pbn * 블록별 페이지 개수 + offset
@@ -153,44 +153,44 @@ void ftl_write(int lsn, char *sectorbuf) {
 		}
 
 		if (PAGES_PER_BLOCK + (pbn * PAGES_PER_BLOCK) == i) { //i의 ppn이 입력받은 ppn과 같은 경우
-			for (j = PAGES_PER_BLOCK * pbn, check = 0; j < PAGES_PER_BLOCK + (PAGES_PER_BLOCK * pbn); j++, check++) {
+			for (j = PAGES_PER_BLOCK * pbn, check = 0; j < PAGES_PER_BLOCK + (PAGES_PER_BLOCK * pbn); j++, check++) { //ppn과 값을 비교하기 위한 반복문
 				if (ppn = j) { //입력받은 ppn이 j와 같은 값을 가지는 경우
-					continue;
+					continue; //계속 진행
 				}
 
-				for (k = (PAGES_PER_BLOCK * pbn) + PAGES_PER_BLOCK; k > PAGES_PER_BLOCK + (PAGES_PER_BLOCK * pbn); k--) {
+				for (k = (PAGES_PER_BLOCK * pbn) + PAGES_PER_BLOCK; k > PAGES_PER_BLOCK + (PAGES_PER_BLOCK * pbn); k--) { //k의 값을 줄여가며 값을 탐색
 					sprintf(cmp_spare_data, "%d", k); //k값을 cmp_spare_data에 저장
 					dd_read(k, tmpbuf); //dd_read로 k번째 ppn의 값을 읽어옴
 
-					if (strcmp(tmpbuf + SECTOR_SIZE, cmp_spare_data) != 0) {
-						dd_write(check + ((addrMappingTable.entry[DATABLKS_PER_DEVICE].pbn) * PAGES_PER_BLOCK), tmpbuf);
+					if (strcmp(tmpbuf + SECTOR_SIZE, cmp_spare_data) != 0) { //tmpbuf의 내용에 SECTOR_SIZE를 더하여 cmp_spare_data와 내용 비교
+						dd_write(check + ((addrMappingTable.entry[DATABLKS_PER_DEVICE].pbn) * PAGES_PER_BLOCK), tmpbuf); //tmpbuf의 내용을 check값을 더한 addrMappingTable에 dd_write()
 						break;
 					}
 				}
 
-				if (PAGES_PER_BLOCK + (PAGES_PER_BLOCK * pbn) == k) {
-					dd_read(j, tmpbuf);
+				if (PAGES_PER_BLOCK + (PAGES_PER_BLOCK * pbn) == k) { //k의 값이 위에서 진행한 연산에 해당하는 값과 같을 경우
+					dd_read(j, tmpbuf); //해당 인덱스의 ppn에 tmpbuf의 내용을 dd_read
 
-					if (offset == check) {
+					if (offset == check) { //오프셋과 체크가 같을 경우
 						check++;
 					}
 
-					dd_write(check + ((addrMappingTable.entry[DATABLKS_PER_DEVICE].pbn) * PAGES_PER_BLOCK), tmpbuf); 
+					dd_write(check + ((addrMappingTable.entry[DATABLKS_PER_DEVICE].pbn) * PAGES_PER_BLOCK), tmpbuf); //dd_write() 진행 
 					dd_read(check + ((addrMappingTable.entry[DATABLKS_PER_DEVICE].pbn) * PAGES_PER_BLOCK), tmpbuf); 
 				}
 			}
 
-			dd_write(offset + ((addrMappingTable.entry[DATABLKS_PER_DEVICE].pbn) * PAGES_PER_BLOCK), pagebuf);
-			dd_erase(pbn);
-			addrMappingTable.entry[lbn].pbn = freeBlockIdx;
-			addrMappingTable.entry[DATABLKS_PER_DEVICE].pbn = pbn;
-			freeBlockIdx = pbn;
+			dd_write(offset + ((addrMappingTable.entry[DATABLKS_PER_DEVICE].pbn) * PAGES_PER_BLOCK), pagebuf); //offset 값을 더한 ppn에 페이지버퍼의 내용 쓰기
+			dd_erase(pbn); //pbn의 내용을 지우고
+			addrMappingTable.entry[lbn].pbn = freeBlockIdx; //lbn에 위치하는 pbn의 값에 free block의 인덱스를 줌
+			addrMappingTable.entry[DATABLKS_PER_DEVICE].pbn = pbn; //마지막 블록의 pbn값에 pbn 지정
+			freeBlockIdx = pbn; //free block의 인덱스를 pbn으로 업데이트
 
 		}
 	}
 
 	else {
-		dd_write(ppn, pagebuf);
+		dd_write(ppn, pagebuf); //위의 조건 해당 X 경우 ppn에 페이지버퍼 내용 작성
 	}
 
 	return;
@@ -198,10 +198,10 @@ void ftl_write(int lsn, char *sectorbuf) {
 
 void ftl_print() {
 	printf("lbn pbn\n");
-	for (int i = 0; i < DATABLKS_PER_DEVICE; i++) {
-		printf("%d %d\n", addrMappingTable.entry[i].lbn, addrMappingTable.entry[i].pbn);
+	for (int i = 0; i < DATABLKS_PER_DEVICE; i++) { //블록의 개수만큼
+		printf("%d %d\n", addrMappingTable.entry[i].lbn, addrMappingTable.entry[i].pbn); //addrMappingTable의 lbn과 pbn 출력
 	}
 
-	printf("free block's pbn=%d\n", freeBlockIdx);
+	printf("free block's pbn=%d\n", freeBlockIdx); //free block의 인덱스
 	return;
 }
