@@ -1,7 +1,13 @@
 # file_processing
 ------
-## 파일처리 과제 2
-* create_file.c
-  - [int to binary 헤더 레코드 저장](https://www.programmingsimplified.com/c/source-code/c-program-convert-decimal-to-binary)
-  - [이진수로 변환](https://lypicfa.tistory.com/209)
-  - **얘가 제일 좋은 듯** [10진수 -> 2진수](https://edu-coding.tistory.com/17#:~:text=10%EC%A7%84%EC%88%98%EB%A5%BC%202%EC%A7%84%EC%88%98%EB%A1%9C%20%EB%B3%80%ED%99%98%ED%95%98%EB%A0%A4%EB%A9%B4%2010%EC%A7%84%EC%88%98,2%EC%A7%84%EC%88%98%EA%B0%80%20%EC%B6%9C%EB%A0%A5%EB%90%A9%EB%8B%88%EB%8B%A4.)
+
+숭실대학교 컴퓨터학부 3-1 전공 교과목 <파일처리 - 지도 교수: 박동주 교수님> 과제 코드 관리 목적의 레포지토리입니다.
+
+1. File I/O 연산 프로그래밍
+2. 디스크 I/O 비용 계산 프로그래밍
+3. Flash Memory에서의 Block Mapping FTL 구현
+4. 레코드 저장 및 삭제
+5. 인데스 생성 및 이진 검색
+
+위 내용들에 대해 학습하고 구현한 코드 자료물입니다.
+(2021학년도 1학기 수강)
